@@ -13,11 +13,7 @@ interface Api {
 }
 
 export function ApiSidebar({ onApisChange }: { onApisChange: (apis: Api[]) => void }) {
-  const [apis, setApis] = useState<Api[]>([
-    { id: "1", name: "Get Users", url: "https://api.example.com/users" },
-    { id: "2", name: "Get Products", url: "https://api.example.com/products" },
-    { id: "3", name: "Get Orders", url: "https://api.example.com/orders" },
-  ]);
+  const [apis, setApis] = useState<Api[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingApi, setEditingApi] = useState<Api | null>(null);
   const [deletingApi, setDeletingApi] = useState<Api | null>(null);
