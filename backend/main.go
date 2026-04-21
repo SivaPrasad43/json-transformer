@@ -64,12 +64,26 @@ func main() {
 
 func corsMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		origin := os.Getenv("CORS_ORIGIN")
-		if origin == "" {
-			origin = "http://localhost:3000"
+		origins := os.Getenv("CORS_ORIGIN")
+		if origins == "" {
+			origins = "http://localhost:3000"
 		}
 		
-		w.Header().Set("Access-Control-Allow-Origin", origin)
+		requestOrigin := r.Header.Get("Origin")
+		allowed := false
+		
+		for _, origin := range splitAndTrim(origins, ",") {
+			if origin == "*" || origin == requestOrigin {
+				allowed = true
+				w.Header().Set("Access-Control-Allow-Origin", origin)
+				break
+			}
+		}
+		
+		if !allowed && requestOrigin != "" {
+			w.Header().Set("Access-Control-Allow-Origin", splitAndTrim(origins, ",")[0])
+		}
+		
 		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
 		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
 		
@@ -80,6 +94,47 @@ func corsMiddleware(next http.Handler) http.Handler {
 		
 		next.ServeHTTP(w, r)
 	})
+}
+
+func splitAndTrim(s, sep string) []string {
+	parts := []string{}
+	for _, part := range splitString(s, sep) {
+		trimmed := trimSpace(part)
+		if trimmed != "" {
+			parts = append(parts, trimmed)
+		}
+	}
+	return parts
+}
+
+func splitString(s, sep string) []string {
+	if s == "" {
+		return []string{}
+	}
+	result := []string{}
+	current := ""
+	for _, c := range s {
+		if string(c) == sep {
+			result = append(result, current)
+			current = ""
+		} else {
+			current += string(c)
+		}
+	}
+	result = append(result, current)
+	return result
+}
+
+func trimSpace(s string) string {
+	start := 0
+	end := len(s)
+	for start < end && (s[start] == ' ' || s[start] == '\t' || s[start] == '\n' || s[start] == '\r') {
+		start++
+	}
+	for end > start && (s[end-1] == ' ' || s[end-1] == '\t' || s[end-1] == '\n' || s[end-1] == '\r') {
+		end--
+	}
+	return s[start:end]
 }
 
 func healthHandler(w http.ResponseWriter, r *http.Request) {

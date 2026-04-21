@@ -3,12 +3,7 @@
 import { useState, useEffect } from "react";
 import { ChevronRight, ChevronDown, Play, Rocket, Copy, X, ArrowLeft } from "lucide-react";
 import { JsonViewer } from "./JsonViewer";
-
-interface Api {
-  id: string;
-  name: string;
-  url: string;
-}
+import { configService, apiService, type Api } from "@/services";
 
 interface TransformWorkspaceProps {
   apis: Api[];
@@ -473,8 +468,7 @@ export function TransformWorkspace({ apis, onBack, initialConfig }: TransformWor
       apis.map(async (api) => {
         try {
           setLogs(prev => [...prev, `Fetching ${api.name} from ${api.url}`]);
-          const response = await fetch(api.url);
-          const data = await response.json();
+          const data = await apiService.testApiConnection(api.url);
           const apiKey = api.name.toLowerCase().replace(/\s+/g, '');
           result[apiKey] = data;
           setLogs(prev => [...prev, `✓ ${api.name} fetched successfully`]);
@@ -727,20 +721,11 @@ export function TransformWorkspace({ apis, onBack, initialConfig }: TransformWor
       };
 
       const isEditing = initialConfig?.id;
-      const url = isEditing ? `/api/configs/${initialConfig.id}` : '/api/configs';
-      const method = isEditing ? 'PUT' : 'POST';
+      
+      const data = isEditing 
+        ? await configService.updateConfig(initialConfig.id!, config)
+        : await configService.createConfig(config);
 
-      const response = await fetch(url, {
-        method,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(config)
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to deploy configuration');
-      }
-
-      const data = await response.json();
       const endpoint = `${window.location.origin}/api/transform/${data.id}`;
       setDeployedEndpoint(endpoint);
       setLogs(prev => [...prev, `✓ Configuration ${isEditing ? 'updated' : 'deployed'} successfully`]);

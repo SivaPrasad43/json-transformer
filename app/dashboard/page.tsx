@@ -4,28 +4,14 @@ import { useState, useEffect } from "react";
 import { ApiSidebar } from "@/components/ApiSidebar";
 import { TransformWorkspace } from "@/components/TransformWorkspace";
 import { Plus, Rocket, Calendar, Edit, Trash2 } from "lucide-react";
-
-interface Api {
-  id: string;
-  name: string;
-  url: string;
-}
-
-interface SavedConfig {
-  id: string;
-  name: string;
-  apis: Api[];
-  outputSchema?: any;
-  mappings?: Record<string, string>;
-  createdAt: string;
-}
+import { configService, type TransformConfig, type Api } from "@/services";
 
 export default function Dashboard() {
   const [apis, setApis] = useState<Api[]>([]);
   const [showWorkspace, setShowWorkspace] = useState(false);
-  const [savedConfigs, setSavedConfigs] = useState<SavedConfig[]>([]);
+  const [savedConfigs, setSavedConfigs] = useState<TransformConfig[]>([]);
   const [loading, setLoading] = useState(true);
-  const [editingConfig, setEditingConfig] = useState<SavedConfig | null>(null);
+  const [editingConfig, setEditingConfig] = useState<TransformConfig | null>(null);
 
   useEffect(() => {
     fetchConfigs();
@@ -33,8 +19,7 @@ export default function Dashboard() {
 
   const fetchConfigs = async () => {
     try {
-      const response = await fetch('/api/configs');
-      const data = await response.json();
+      const data = await configService.getAllConfigs();
       setSavedConfigs(data || []);
     } catch (error) {
       console.error('Failed to fetch configs:', error);
@@ -47,16 +32,14 @@ export default function Dashboard() {
     if (!confirm('Are you sure you want to delete this transformation?')) return;
     
     try {
-      const response = await fetch(`/api/configs/${id}`, { method: 'DELETE' });
-      if (response.ok) {
-        setSavedConfigs(prev => prev.filter(c => c.id !== id));
-      }
+      await configService.deleteConfig(id);
+      setSavedConfigs(prev => prev.filter(c => c.id !== id));
     } catch (error) {
       console.error('Failed to delete config:', error);
     }
   };
 
-  const handleEdit = (config: SavedConfig) => {
+  const handleEdit = (config: TransformConfig) => {
     setEditingConfig(config);
     setApis(config.apis || []);
     setShowWorkspace(true);
@@ -127,7 +110,7 @@ export default function Dashboard() {
                       <Edit className="w-4 h-4" />
                     </button>
                     <button
-                      onClick={() => handleDelete(config.id)}
+                      onClick={() => handleDelete(config.id!)}
                       className="text-zinc-400 hover:text-red-400 p-1"
                       title="Delete"
                     >
@@ -142,7 +125,7 @@ export default function Dashboard() {
                   </div>
                   <div className="flex items-center gap-2 text-xs text-zinc-500">
                     <Calendar className="w-3 h-3" />
-                    {new Date(config.createdAt).toLocaleDateString()}
+                    {config.createdAt && new Date(config.createdAt).toLocaleDateString()}
                   </div>
                 </div>
 
