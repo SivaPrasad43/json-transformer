@@ -1,17 +1,20 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { ChevronRight, ChevronDown, Play } from "lucide-react";
+import { ChevronRight, ChevronDown, Play, Rocket, Copy, X, ArrowLeft } from "lucide-react";
 import { JsonViewer } from "./JsonViewer";
-
-interface Api {
-  id: string;
-  name: string;
-  url: string;
-}
+import { configService, apiService, type Api } from "@/services";
+import { config as appConfig } from "@/lib/config";
 
 interface TransformWorkspaceProps {
   apis: Api[];
+  onBack?: () => void;
+  initialConfig?: {
+    id?: string;
+    name?: string;
+    outputSchema?: any;
+    mappings?: Record<string, string>;
+  } | null;
 }
 
 function JsonTreeNode({ keyName, value, level = 0 }: any) {
@@ -405,7 +408,7 @@ function OutputTreeNode({ keyName, value, level = 0, path = "", onUpdate, onDele
   );
 }
 
-export function TransformWorkspace({ apis }: TransformWorkspaceProps) {
+export function TransformWorkspace({ apis, onBack, initialConfig }: TransformWorkspaceProps) {
   const [inputJson, setInputJson] = useState<any>({});
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<"preview" | "logs" | "errors">("preview");
@@ -413,14 +416,18 @@ export function TransformWorkspace({ apis }: TransformWorkspaceProps) {
   const [errors, setErrors] = useState<string[]>([]);
   const [bottomHeight, setBottomHeight] = useState(250);
   const [isDragging, setIsDragging] = useState(false);
-  const [outputSchema, setOutputSchema] = useState<any>({});
+  const [outputSchema, setOutputSchema] = useState<any>(initialConfig?.outputSchema || {});
   const [isAddingRoot, setIsAddingRoot] = useState(false);
   const [newRootKey, setNewRootKey] = useState("");
   const [newRootType, setNewRootType] = useState("string");
-  const [mappings, setMappings] = useState<Record<string, string>>({});
+  const [mappings, setMappings] = useState<Record<string, string>>(initialConfig?.mappings || {});
   const [transformedOutput, setTransformedOutput] = useState<any>({});
   const [inputView, setInputView] = useState<"tree" | "json">("tree");
   const [outputView, setOutputView] = useState<"tree" | "json">("tree");
+  const [deploying, setDeploying] = useState(false);
+  const [deployedEndpoint, setDeployedEndpoint] = useState<string | null>(null);
+  const [showDeployDialog, setShowDeployDialog] = useState(false);
+  const [configName, setConfigName] = useState(initialConfig?.name || "");
 
   const handleMouseDown = () => setIsDragging(true);
 
@@ -462,8 +469,7 @@ export function TransformWorkspace({ apis }: TransformWorkspaceProps) {
       apis.map(async (api) => {
         try {
           setLogs(prev => [...prev, `Fetching ${api.name} from ${api.url}`]);
-          const response = await fetch(api.url);
-          const data = await response.json();
+          const data = await apiService.testApiConnection(api.url);
           const apiKey = api.name.toLowerCase().replace(/\s+/g, '');
           result[apiKey] = data;
           setLogs(prev => [...prev, `✓ ${api.name} fetched successfully`]);
@@ -694,6 +700,51 @@ export function TransformWorkspace({ apis }: TransformWorkspaceProps) {
     setLogs(prev => [...prev, `Transformation complete. ${errorCount} error(s)`]);
   };
 
+  const handleDeploy = async () => {
+    if (!configName.trim()) {
+      setErrors(prev => [...prev, "Please enter a configuration name"]);
+      return;
+    }
+
+    setDeploying(true);
+    setErrors([]);
+
+    try {
+      const config = {
+        name: configName,
+        apis: apis.map(api => ({
+          id: api.id,
+          name: api.name,
+          url: api.url
+        })),
+        outputSchema,
+        mappings
+      };
+
+      const isEditing = initialConfig?.id;
+      
+      const data = isEditing 
+        ? await configService.updateConfig(initialConfig.id!, config)
+        : await configService.createConfig(config);
+
+      const backendUrl = appConfig.publicBackendUrl || window.location.origin;
+      const endpoint = `${backendUrl}/api/transform/${data.id}`;
+      setDeployedEndpoint(endpoint);
+      setLogs(prev => [...prev, `✓ Configuration ${isEditing ? 'updated' : 'deployed'} successfully`]);
+      setShowDeployDialog(false);
+      setConfigName("");
+    } catch (error) {
+      setErrors(prev => [...prev, `✗ Deployment failed: ${error}`]);
+    } finally {
+      setDeploying(false);
+    }
+  };
+
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+    setLogs(prev => [...prev, "✓ Endpoint URL copied to clipboard"]);
+  };
+
   const getStructure = (obj: any): any => {
     if (obj === null) return "null";
     if (Array.isArray(obj)) {
@@ -718,8 +769,21 @@ export function TransformWorkspace({ apis }: TransformWorkspaceProps) {
 
   return (
     <div className="flex-1 flex flex-col">
+      {/* Header with Back Button */}
+      {onBack && (
+        <div className="px-4 py-3 border-b border-zinc-800 flex items-center gap-3">
+          <button
+            onClick={onBack}
+            className="text-zinc-400 hover:text-zinc-200 flex items-center gap-2 text-sm"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Back to Dashboard
+          </button>
+        </div>
+      )}
+      
       {/* Central Section */}
-      <div className="flex gap-4 p-3" style={{ height: `calc(100% - ${bottomHeight}px)` }}>
+      <div className="flex gap-4 p-3" style={{ height: `calc(100% - ${bottomHeight}px - ${onBack ? '48px' : '0px'})` }}>
         {/* Input JSON Panel */}
         <div className="flex-1 bg-black rounded-lg border border-zinc-800 flex flex-col">
           <div className="px-4 py-3 border-b border-zinc-800 flex items-center justify-between">
@@ -800,6 +864,13 @@ export function TransformWorkspace({ apis }: TransformWorkspaceProps) {
                 <Play className="w-3 h-3" />
                 Run
               </button>
+              <button
+                onClick={() => setShowDeployDialog(true)}
+                className="text-white bg-green-600 hover:bg-green-700 text-xs px-3 py-1 rounded flex items-center gap-1"
+              >
+                <Rocket className="w-3 h-3" />
+                Deploy
+              </button>
               {outputView === "tree" && (
                 <button
                   onClick={() => setIsAddingRoot(!isAddingRoot)}
@@ -873,7 +944,7 @@ export function TransformWorkspace({ apis }: TransformWorkspaceProps) {
       />
 
       {/* Bottom Section */}
-      <div className="bg-black border-t border-zinc-800 flex flex-col" style={{ height: `${bottomHeight}px` }}>
+      <div className="bg-black border-t border-zinc-800 flex flex-col overflow-x-hidden w-[calc(100vw-13rem)]" style={{ height: `${bottomHeight}px` }}>
         <div className="flex border-b border-zinc-800">
           <button
             onClick={() => setActiveTab("preview")}
@@ -944,6 +1015,83 @@ export function TransformWorkspace({ apis }: TransformWorkspaceProps) {
           )}
         </div>
       </div>
+
+      {/* Deploy Dialog */}
+      {showDeployDialog && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-6 w-96">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-zinc-200">Deploy Configuration</h3>
+              <button
+                onClick={() => setShowDeployDialog(false)}
+                className="text-zinc-500 hover:text-zinc-300"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="mb-4">
+              <label className="block text-sm text-zinc-400 mb-2">Configuration Name</label>
+              <input
+                type="text"
+                value={configName}
+                onChange={(e) => setConfigName(e.target.value)}
+                placeholder="e.g., User Posts Aggregator"
+                className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-sm text-zinc-200 focus:outline-none focus:border-indigo-500"
+              />
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={handleDeploy}
+                disabled={deploying || !configName.trim()}
+                className="flex-1 bg-green-600 hover:bg-green-700 disabled:bg-zinc-700 disabled:text-zinc-500 text-white text-sm px-4 py-2 rounded flex items-center justify-center gap-2"
+              >
+                {deploying ? (
+                  <>Deploying...</>
+                ) : (
+                  <>
+                    <Rocket className="w-4 h-4" />
+                    Deploy
+                  </>
+                )}
+              </button>
+              <button
+                onClick={() => setShowDeployDialog(false)}
+                className="px-4 py-2 text-sm text-zinc-400 hover:text-zinc-200"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Deployed Endpoint Display */}
+      {deployedEndpoint && (
+        <div className="fixed bottom-4 right-4 bg-zinc-900 border border-green-500 rounded-lg p-4 w-96 shadow-lg">
+          <div className="flex items-start justify-between mb-2">
+            <div className="flex items-center gap-2">
+              <Rocket className="w-5 h-5 text-green-500" />
+              <h4 className="text-sm font-semibold text-zinc-200">Deployed Successfully!</h4>
+            </div>
+            <button
+              onClick={() => setDeployedEndpoint(null)}
+              className="text-zinc-500 hover:text-zinc-300"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+          <p className="text-xs text-zinc-400 mb-2">Your API endpoint:</p>
+          <div className="flex items-center gap-2 bg-zinc-800 rounded px-3 py-2">
+            <code className="flex-1 text-xs text-green-400 break-all">{deployedEndpoint}</code>
+            <button
+              onClick={() => copyToClipboard(deployedEndpoint)}
+              className="text-zinc-400 hover:text-zinc-200"
+            >
+              <Copy className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

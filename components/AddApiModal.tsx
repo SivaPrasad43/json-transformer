@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { X, Loader2, Play, Maximize2, Minimize2, XCircle } from "lucide-react";
+import { apiService } from "@/services";
 
 interface AddApiModalProps {
   isOpen: boolean;
@@ -71,12 +72,11 @@ export function AddApiModal({ isOpen, onClose, onAdd, editingApi }: AddApiModalP
     const startTime = Date.now();
 
     try {
-      const response = await fetch(url, { signal: controller.signal });
-      const data = await response.json();
+      const data = await apiService.testApiConnection(url, controller.signal);
       const timeTaken = Date.now() - startTime;
 
       setTestResult({
-        status: response.status,
+        status: 200,
         time: timeTaken,
         response: data,
       });

@@ -12,8 +12,8 @@ interface Api {
   url: string;
 }
 
-export function ApiSidebar({ onApisChange }: { onApisChange: (apis: Api[]) => void }) {
-  const [apis, setApis] = useState<Api[]>([]);
+export function ApiSidebar({ onApisChange, initialApis }: { onApisChange: (apis: Api[]) => void; initialApis?: Api[] }) {
+  const [apis, setApis] = useState<Api[]>(initialApis || []);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingApi, setEditingApi] = useState<Api | null>(null);
   const [deletingApi, setDeletingApi] = useState<Api | null>(null);
