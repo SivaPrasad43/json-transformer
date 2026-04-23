@@ -9,8 +9,7 @@ export interface TransformResponse {
 export const transformService = {
   async executeTransformation(id: string): Promise<TransformResponse> {
     const response = await fetch(`${config.backendUrl}/transform/${id}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      method: 'GET',
     });
     if (!response.ok) throw new Error('Failed to execute transformation');
     return response.json();

@@ -2,16 +2,20 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"regexp"
 	"strconv"
 )
 
 func transform(input map[string]interface{}, schema map[string]interface{}, mappings map[string]string) (map[string]interface{}, []string) {
+	log.Printf("[INFO] Transform: Starting transformation with %d mappings", len(mappings))
 	var errors []string
 	result := transformValue(input, schema, mappings, "", &errors)
 	if resultMap, ok := result.(map[string]interface{}); ok {
+		log.Printf("[INFO] Transform: Completed with %d errors", len(errors))
 		return resultMap, errors
 	}
+	log.Printf("[INFO] Transform: Completed with %d errors", len(errors))
 	return map[string]interface{}{"result": result}, errors
 }
 

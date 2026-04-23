@@ -1,6 +1,7 @@
 package main
 
 import (
+	"log"
 	"sync"
 	"time"
 
@@ -42,6 +43,7 @@ func (s *ConfigStore) Create(config *TransformConfig) *TransformConfig {
 	config.CreatedAt = time.Now()
 	config.UpdatedAt = time.Now()
 	s.configs[config.ID] = config
+	log.Printf("[INFO] Store: Config created - id=%s, name=%s, apis=%d", config.ID, config.Name, len(config.APIs))
 	return config
 }
 
@@ -70,6 +72,7 @@ func (s *ConfigStore) Update(id string, updated *TransformConfig) (*TransformCon
 
 	config, exists := s.configs[id]
 	if !exists {
+		log.Printf("[WARN] Store: Config not found for update - id=%s", id)
 		return nil, false
 	}
 
@@ -77,6 +80,7 @@ func (s *ConfigStore) Update(id string, updated *TransformConfig) (*TransformCon
 	updated.CreatedAt = config.CreatedAt
 	updated.UpdatedAt = time.Now()
 	s.configs[id] = updated
+	log.Printf("[INFO] Store: Config updated - id=%s, name=%s", updated.ID, updated.Name)
 	return updated, true
 }
 
@@ -86,9 +90,11 @@ func (s *ConfigStore) Delete(id string) bool {
 
 	_, exists := s.configs[id]
 	if !exists {
+		log.Printf("[WARN] Store: Config not found for deletion - id=%s", id)
 		return false
 	}
 
 	delete(s.configs, id)
+	log.Printf("[INFO] Store: Config deleted - id=%s", id)
 	return true
 }

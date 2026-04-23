@@ -28,7 +28,7 @@ func main() {
 	router.HandleFunc("/api/configs/{id}", getConfigHandler(store)).Methods("GET")
 	router.HandleFunc("/api/configs/{id}", updateConfigHandler(store)).Methods("PUT")
 	router.HandleFunc("/api/configs/{id}", deleteConfigHandler(store)).Methods("DELETE")
-	router.HandleFunc("/api/transform/{id}", transformHandler(store)).Methods("POST")
+	router.HandleFunc("/api/transform/{id}", transformHandler(store)).Methods("GET")
 	
 	handler := corsMiddleware(router)
 	
