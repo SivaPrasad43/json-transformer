@@ -5,6 +5,7 @@ import { ApiSidebar } from "@/components/ApiSidebar";
 import { TransformWorkspace } from "@/components/TransformWorkspace";
 import { Plus, Rocket, Calendar, Edit, Trash2 } from "lucide-react";
 import { configService, type TransformConfig, type Api } from "@/services";
+import { config as appConfig } from "@/lib/config";
 
 export default function Dashboard() {
   const [apis, setApis] = useState<Api[]>([]);
@@ -131,12 +132,12 @@ export default function Dashboard() {
 
                 <div className="pt-4 border-t border-zinc-800">
                   <a
-                    href={`/api/transform/${config.id}`}
+                    href={`${appConfig.publicBackendUrl}/api/transform/${config.id}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-sm text-indigo-400 hover:text-indigo-300 font-mono break-all"
                   >
-                    /api/transform/{config.id}
+                    {appConfig.publicBackendUrl}/api/transform/{config.id}
                   </a>
                 </div>
               </div>
