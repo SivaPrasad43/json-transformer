@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { ChevronRight, ChevronDown, Play, Rocket, Copy, X, ArrowLeft } from "lucide-react";
 import { JsonViewer } from "./JsonViewer";
 import { configService, apiService, type Api } from "@/services";
-import { config } from "@/lib/config";
+import { config as appConfig } from "@/lib/config";
 
 interface TransformWorkspaceProps {
   apis: Api[];
@@ -727,7 +727,7 @@ export function TransformWorkspace({ apis, onBack, initialConfig }: TransformWor
         ? await configService.updateConfig(initialConfig.id!, config)
         : await configService.createConfig(config);
 
-      const backendUrl = config.publicBackendUrl || window.location.origin;
+      const backendUrl = appConfig.publicBackendUrl || window.location.origin;
       const endpoint = `${backendUrl}/api/transform/${data.id}`;
       setDeployedEndpoint(endpoint);
       setLogs(prev => [...prev, `✓ Configuration ${isEditing ? 'updated' : 'deployed'} successfully`]);
