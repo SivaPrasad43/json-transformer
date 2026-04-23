@@ -52,6 +52,6 @@ export const configService = {
     const response = await fetch(`${config.backendUrl}/configs/${id}`, {
       method: 'DELETE',
     });
-    if (!response.ok) throw new Error('Failed to delete config');
+    if (!response.ok && response.status !== 204) throw new Error('Failed to delete config');
   },
 };
