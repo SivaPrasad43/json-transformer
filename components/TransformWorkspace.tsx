@@ -944,7 +944,7 @@ export function TransformWorkspace({ apis, onBack, initialConfig }: TransformWor
       />
 
       {/* Bottom Section */}
-      <div className="bg-black border-t border-zinc-800 flex flex-col" style={{ height: `${bottomHeight}px` }}>
+      <div className="bg-black border-t border-zinc-800 flex flex-col overflow-x-hidden w-[calc(100vw-13rem)]" style={{ height: `${bottomHeight}px` }}>
         <div className="flex border-b border-zinc-800">
           <button
             onClick={() => setActiveTab("preview")}
