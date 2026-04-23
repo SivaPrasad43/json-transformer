@@ -47,7 +47,7 @@ export function ApiSidebar({ onApisChange, initialApis }: { onApisChange: (apis:
 
   return (
     <>
-      <aside className="w-64 bg-zinc-900 border-r border-zinc-800 flex flex-col">
+      <aside className="w-80 bg-black border-r border-zinc-800 flex flex-col">
         <div className="p-2 border-b border-zinc-800">
           <Button 
             className="w-full bg-white text-black hover:bg-zinc-200"
@@ -62,14 +62,28 @@ export function ApiSidebar({ onApisChange, initialApis }: { onApisChange: (apis:
         </div>
         
         <div className="flex-1 overflow-y-auto">
-          <div className="p-2">
+          <div className="p-2 border-zinc-900 border-b">
             {apis.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
-                <div className="w-12 h-12 rounded-full bg-zinc-800 flex items-center justify-center mb-3">
-                  <Plus className="w-6 h-6 text-zinc-500" />
+              <div className="flex flex-col items-center justify-center py-16 px-6 text-center">
+                <div className="relative mb-4">
+                  <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-indigo-500/20 to-purple-500/20 flex items-center justify-center border border-indigo-500/30">
+                    <Plus className="w-8 h-8 text-indigo-400" />
+                  </div>
                 </div>
-                <p className="text-sm text-zinc-400 mb-1">No APIs yet</p>
-                <p className="text-xs text-zinc-600">Click "New API" to get started</p>
+                <h3 className="text-base font-semibold text-zinc-200 mb-2">No API Sources</h3>
+                <p className="text-sm text-zinc-400 mb-4 max-w-[200px]">
+                  Add your first API source to start transforming data
+                </p>
+                <button
+                  onClick={() => {
+                    setEditingApi(null);
+                    setIsModalOpen(true);
+                  }}
+                  className="text-sm text-indigo-400 hover:text-indigo-300 font-medium flex items-center gap-1 transition-colors"
+                >
+                  <Plus className="w-4 h-4" />
+                  Add API Source
+                </button>
               </div>
             ) : (
               apis.map((api) => (
