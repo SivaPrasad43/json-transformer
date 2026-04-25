@@ -30,16 +30,13 @@ export default function Dashboard() {
   };
 
   const handleDelete = async (id: string) => {
-    toastService.promise(
-      configService.deleteConfig(id),
-      {
-        loading: 'Deleting transformation...',
-        success: 'Transformation deleted successfully',
-        error: 'Failed to delete transformation',
-      }
-    ).then(() => {
+    try {
+      await configService.deleteConfig(id);
       setSavedConfigs(prev => prev.filter(c => c.id !== id));
-    });
+      toastService.deleted('Transformation deleted successfully');
+    } catch (error) {
+      toastService.error('Failed to delete transformation');
+    }
   };
 
   const handleEdit = (config: TransformConfig) => {
