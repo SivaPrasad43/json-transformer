@@ -4,8 +4,8 @@ import { ArrowRight, Zap, Code2, Sparkles } from "lucide-react";
 
 export default function Home() {
   return (
-    <div className="h-[100dvh] flex flex-col bg-black pt-16">
-      <main className="flex flex-1 flex-col items-center justify-center px-6">
+    <div className="h-[100dvh] flex flex-col bg-black pt-16 overflow-y-auto">
+      <main className="flex flex-1 flex-col items-center justify-center px-6 overflow-y-auto">
         {/* Hero Section */}
         <div className="max-w-4xl mx-auto text-center space-y-8">
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-sm">

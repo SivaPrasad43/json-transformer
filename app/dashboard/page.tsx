@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { ApiSidebar } from "@/components/ApiSidebar";
 import { TransformWorkspace } from "@/components/TransformWorkspace";
 import { Plus, Rocket, Calendar, Edit, Trash2 } from "lucide-react";
-import { configService, type TransformConfig, type Api } from "@/services";
+import { configService, type TransformConfig, type Api, toastService } from "@/services";
 import { config as appConfig } from "@/lib/config";
 
 export default function Dashboard() {
@@ -23,21 +23,23 @@ export default function Dashboard() {
       const data = await configService.getAllConfigs();
       setSavedConfigs(data || []);
     } catch (error) {
-      console.error('Failed to fetch configs:', error);
+      toastService.error('Failed to fetch configurations');
     } finally {
       setLoading(false);
     }
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this transformation?')) return;
-    
-    try {
-      await configService.deleteConfig(id);
+    toastService.promise(
+      configService.deleteConfig(id),
+      {
+        loading: 'Deleting transformation...',
+        success: 'Transformation deleted successfully',
+        error: 'Failed to delete transformation',
+      }
+    ).then(() => {
       setSavedConfigs(prev => prev.filter(c => c.id !== id));
-    } catch (error) {
-      console.error('Failed to delete config:', error);
-    }
+    });
   };
 
   const handleEdit = (config: TransformConfig) => {

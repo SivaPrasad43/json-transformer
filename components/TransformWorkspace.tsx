@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { ChevronRight, ChevronDown, Play, Rocket, Copy, X, ArrowLeft } from "lucide-react";
 import { JsonViewer } from "./JsonViewer";
-import { configService, apiService, type Api } from "@/services";
+import { configService, apiService, type Api, toastService } from "@/services";
 import { config as appConfig } from "@/lib/config";
 
 interface TransformWorkspaceProps {
@@ -698,11 +698,17 @@ export function TransformWorkspace({ apis, onBack, initialConfig }: TransformWor
     console.log('Transformed output:', transformed);
     setTransformedOutput(transformed);
     setLogs(prev => [...prev, `Transformation complete. ${errorCount} error(s)`]);
+    
+    if (errorCount === 0) {
+      toastService.transform('Transformation completed successfully');
+    } else {
+      toastService.warning(`Transformation completed with ${errorCount} error(s)`, 'Check the errors tab for details');
+    }
   };
 
   const handleDeploy = async () => {
     if (!configName.trim()) {
-      setErrors(prev => [...prev, "Please enter a configuration name"]);
+      toastService.error("Please enter a configuration name");
       return;
     }
 
@@ -731,10 +737,15 @@ export function TransformWorkspace({ apis, onBack, initialConfig }: TransformWor
       const endpoint = `${backendUrl}/api/transform/${data.id}`;
       setDeployedEndpoint(endpoint);
       setLogs(prev => [...prev, `✓ Configuration ${isEditing ? 'updated' : 'deployed'} successfully`]);
+      toastService.success(
+        isEditing ? 'Configuration updated successfully' : 'Configuration deployed successfully',
+        'Your transformation is now live'
+      );
       setShowDeployDialog(false);
       setConfigName("");
     } catch (error) {
       setErrors(prev => [...prev, `✗ Deployment failed: ${error}`]);
+      toastService.error('Deployment failed', 'Please check the logs for more details');
     } finally {
       setDeploying(false);
     }
@@ -743,6 +754,7 @@ export function TransformWorkspace({ apis, onBack, initialConfig }: TransformWor
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
     setLogs(prev => [...prev, "✓ Endpoint URL copied to clipboard"]);
+    toastService.copied(text);
   };
 
   const getStructure = (obj: any): any => {
