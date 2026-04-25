@@ -3,8 +3,9 @@
 import { useState, useEffect } from "react";
 import { ChevronRight, ChevronDown, Play, Rocket, Copy, X, ArrowLeft } from "lucide-react";
 import { JsonViewer } from "./JsonViewer";
-import { configService, apiService, type Api } from "@/services";
+import { configService, apiService, type Api, toastService } from "@/services";
 import { config as appConfig } from "@/lib/config";
+import { TypeIcon, getTypeLabel } from "@/lib/type-icons";
 
 interface TransformWorkspaceProps {
   apis: Api[];
@@ -22,17 +23,11 @@ function JsonTreeNode({ keyName, value, level = 0 }: any) {
   const isObject = typeof value === "object" && value !== null && !Array.isArray(value);
   const isArray = Array.isArray(value);
   const isExpandable = isObject || isArray;
-  
-  const getType = () => {
-    if (isArray) return "array";
-    if (isObject) return "object";
-    return typeof value;
-  };
 
   return (
     <div className="font-mono text-sm">
       <div
-        className="flex items-center gap-1 py-1 hover:bg-zinc-800/50 cursor-pointer"
+        className="flex items-center gap-2 py-1 hover:bg-zinc-800/50 cursor-pointer group"
         style={{ paddingLeft: `${level * 16}px` }}
         onClick={() => isExpandable && setIsExpanded(!isExpanded)}
       >
@@ -45,9 +40,9 @@ function JsonTreeNode({ keyName, value, level = 0 }: any) {
         ) : (
           <span className="w-4" />
         )}
+        <TypeIcon value={value} className="opacity-60 group-hover:opacity-100 transition-opacity" />
         <span className="text-indigo-400">{keyName}</span>
-        <span className="text-zinc-600">:</span>
-        <span className="text-zinc-500 text-xs">{getType()}</span>
+        <span className="text-zinc-500 text-xs opacity-50">: {getTypeLabel(value)}</span>
       </div>
       {isExpandable && isExpanded && (
         <div>
@@ -198,21 +193,13 @@ function OutputTreeNode({ keyName, value, level = 0, path = "", onUpdate, onDele
         ) : (
           <span className="w-4" />
         )}
+        <TypeIcon value={value} className="opacity-60 group-hover:opacity-100 transition-opacity" />
         <span className="text-indigo-400">{keyName}</span>
-        <span className="text-zinc-600">:</span>
+        <span className="text-zinc-500 text-xs opacity-50">: {getTypeLabel(value)}</span>
         {!isEditingType ? (
           <>
-            <span 
-              className="text-zinc-500 text-xs cursor-pointer hover:text-indigo-400"
-              onClick={() => {
-                setEditType(getType());
-                setIsEditingType(true);
-              }}
-            >
-              {getType()}
-            </span>
             {!isExpandable && (
-              <div className="relative ml-2 flex-1">
+              <div className="relative flex-1 max-w-xs ml-2">
                 <input
                   type="text"
                   placeholder="input.path"
@@ -698,11 +685,15 @@ export function TransformWorkspace({ apis, onBack, initialConfig }: TransformWor
     console.log('Transformed output:', transformed);
     setTransformedOutput(transformed);
     setLogs(prev => [...prev, `Transformation complete. ${errorCount} error(s)`]);
+    
+    if (errorCount > 0) {
+      toastService.warning(`Transformation completed with ${errorCount} error(s)`, 'Check the errors tab for details');
+    }
   };
 
   const handleDeploy = async () => {
     if (!configName.trim()) {
-      setErrors(prev => [...prev, "Please enter a configuration name"]);
+      toastService.error("Please enter a configuration name");
       return;
     }
 
@@ -731,10 +722,15 @@ export function TransformWorkspace({ apis, onBack, initialConfig }: TransformWor
       const endpoint = `${backendUrl}/api/transform/${data.id}`;
       setDeployedEndpoint(endpoint);
       setLogs(prev => [...prev, `✓ Configuration ${isEditing ? 'updated' : 'deployed'} successfully`]);
+      toastService.success(
+        isEditing ? 'Configuration updated successfully' : 'Configuration deployed successfully',
+        'Your transformation is now live'
+      );
       setShowDeployDialog(false);
       setConfigName("");
     } catch (error) {
       setErrors(prev => [...prev, `✗ Deployment failed: ${error}`]);
+      toastService.error('Deployment failed', 'Please check the logs for more details');
     } finally {
       setDeploying(false);
     }
@@ -743,6 +739,7 @@ export function TransformWorkspace({ apis, onBack, initialConfig }: TransformWor
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
     setLogs(prev => [...prev, "✓ Endpoint URL copied to clipboard"]);
+    toastService.copied(text);
   };
 
   const getStructure = (obj: any): any => {

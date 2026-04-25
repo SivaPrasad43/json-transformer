@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Plus, Pencil, Trash2 } from "lucide-react";
 import { AddApiModal } from "./AddApiModal";
 import { ConfirmModal } from "./ConfirmModal";
+import { toastService } from "@/services";
 
 interface Api {
   id: string;
@@ -43,6 +44,7 @@ export function ApiSidebar({ onApisChange, initialApis }: { onApisChange: (apis:
   const handleDelete = (id: string) => {
     setApis(apis.filter(api => api.id !== id));
     setDeletingApi(null);
+    toastService.deleted('API removed successfully');
   };
 
   return (

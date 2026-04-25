@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { X, Loader2, Play, Maximize2, Minimize2, XCircle } from "lucide-react";
-import { apiService } from "@/services";
+import { apiService, toastService } from "@/services";
 
 interface AddApiModalProps {
   isOpen: boolean;
@@ -80,6 +80,7 @@ export function AddApiModal({ isOpen, onClose, onAdd, editingApi }: AddApiModalP
         time: timeTaken,
         response: data,
       });
+      toastService.apiTest('API test successful', timeTaken);
     } catch (error: any) {
       if (error.name === 'AbortError') {
         setTestResult({
@@ -87,12 +88,14 @@ export function AddApiModal({ isOpen, onClose, onAdd, editingApi }: AddApiModalP
           time: Date.now() - startTime,
           response: { error: "Request cancelled" },
         });
+        toastService.info('Request cancelled');
       } else {
         setTestResult({
           status: 0,
           time: Date.now() - startTime,
           response: { error: "Failed to fetch" },
         });
+        toastService.error('API test failed', 'Unable to connect to the API endpoint');
       }
     } finally {
       setTesting(false);
@@ -114,6 +117,7 @@ export function AddApiModal({ isOpen, onClose, onAdd, editingApi }: AddApiModalP
       setUrl("");
       setErrors({ name: "", url: "" });
       setTestResult(null);
+      toastService.success(editingApi ? 'API updated successfully' : 'API added successfully');
       onClose();
     }
   };
